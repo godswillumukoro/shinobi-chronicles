@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpRedundantOptionalArgumentInspection */
+<?php
+
+/** @noinspection PhpRedundantOptionalArgumentInspection */
 
 require_once __DIR__ . "/Jutsu.php";
 require_once __DIR__ . "/Team.php";
@@ -9,7 +11,8 @@ require_once __DIR__ . "/battle/Fighter.php";
 	Purpose:	Fetch user data and load into class variables.
 */
 
-class User extends Fighter {
+class User extends Fighter
+{
     const ENTITY_TYPE = 'U';
 
     const AVATAR_MAX_SIZE = 150;
@@ -22,11 +25,11 @@ class User extends Fighter {
     const GENDER_NONE = 'None';
 
     public static array $genders = [
-            User::GENDER_MALE,
-            User::GENDER_FEMALE,
-            User::GENDER_NON_BINARY,
-            User::GENDER_NONE
-        ];
+        User::GENDER_MALE,
+        User::GENDER_FEMALE,
+        User::GENDER_NON_BINARY,
+        User::GENDER_NONE
+    ];
 
     const MIN_NAME_LENGTH = 2;
     const MIN_PASSWORD_LENGTH = 6;
@@ -233,21 +236,23 @@ class User extends Fighter {
      * @param $user_id
      * @throws Exception
      */
-    public function __construct($user_id) {
+    public function __construct($user_id)
+    {
         global $system;
-        $this->system =& $system;
+        $this->system = &$system;
 
-        if(!$user_id) {
+        if (!$user_id) {
             throw new Exception("Invalid user id!");
         }
         $this->user_id = $this->system->clean($user_id);
         $this->id = self::ENTITY_TYPE . ':' . $this->user_id;
 
-        $result = $this->system->query("SELECT `user_id`, `user_name`, `ban_type`, `ban_expire`, `journal_ban`, `avatar_ban`, `song_ban`, `last_login`,
+        $result = $this->system->query(
+            "SELECT `user_id`, `user_name`, `ban_type`, `ban_expire`, `journal_ban`, `avatar_ban`, `song_ban`, `last_login`,
 			`forbidden_seal`, `chat_color`, `staff_level`, `username_changes`, `support_level`, `special_mission`
 			FROM `users` WHERE `user_id`='$this->user_id' LIMIT 1"
         );
-        if($this->system->db_last_num_rows == 0) {
+        if ($this->system->db_last_num_rows == 0) {
             throw new Exception("User does not exist!");
         }
 
@@ -270,7 +275,7 @@ class User extends Fighter {
         $this->forbidden_seal = $result['forbidden_seal'];
         $this->chat_color = $result['chat_color'];
 
-        if($this->ban_type && $this->ban_expire <= time()) {
+        if ($this->ban_type && $this->ban_expire <= time()) {
             $this->system->message("Your " . $this->ban_type . " ban has ended.");
             $this->ban_type = '';
 
@@ -288,14 +293,15 @@ class User extends Fighter {
         Update (1 = regen, 2 = training)
     */
 
-    public function loadData($UPDATE = User::UPDATE_FULL, $remote_view = false): string {
+    public function loadData($UPDATE = User::UPDATE_FULL, $remote_view = false): string
+    {
         $result = $this->system->query("SELECT * FROM `users` WHERE `user_id`='$this->user_id' LIMIT 1");
         $user_data = $this->system->db_fetch($result);
 
         $this->current_ip = $user_data['current_ip'];
         $this->last_ip = $user_data['last_ip'];
         // IP stuff
-        if(!$remote_view && $this->current_ip != $_SERVER['REMOTE_ADDR']) {
+        if (!$remote_view && $this->current_ip != $_SERVER['REMOTE_ADDR']) {
             $this->last_ip = $this->current_ip;
             $this->current_ip = $_SERVER['REMOTE_ADDR'];
         }
@@ -314,12 +320,11 @@ class User extends Fighter {
         // Message blacklist
         $this->blacklist = [];
         $result = $this->system->query("SELECT `blocked_ids` FROM `blacklist` WHERE `user_id`='$this->user_id' LIMIT 1");
-        if($this->system->db_last_num_rows != 0) {
+        if ($this->system->db_last_num_rows != 0) {
             $blacklist = $this->system->db_fetch($result);
             $this->blacklist = json_decode($blacklist['blocked_ids'], true);
             $this->original_blacklist = $this->blacklist;
-        }
-        else {
+        } else {
             $blacklist_json = json_encode($this->blacklist);
             $this->system->query("INSERT INTO `blacklist` (`user_id`, `blocked_ids`) VALUES ('{$this->user_id}', '{$blacklist_json}')");
             $this->original_blacklist = []; // Default an empty array, user did not have an original.
@@ -328,11 +333,10 @@ class User extends Fighter {
         // Rank stuff
         $this->rank = $user_data['rank'];
         $rank_data = $this->system->query("SELECT * FROM `ranks` WHERE `rank_id`='$this->rank'");
-        if($this->system->db_last_num_rows == 0) {
+        if ($this->system->db_last_num_rows == 0) {
             $this->system->message("Invalid rank!");
             $this->system->printMessage("Invalid rank!");
-        }
-        else {
+        } else {
             $rank_data = $this->system->db_fetch($rank_data);
             $this->rank_name = $rank_data['name'];
             $this->base_level = $rank_data['base_level'];
@@ -358,13 +362,13 @@ class User extends Fighter {
         $this->chakra = $user_data['chakra'];
         $this->max_chakra = $user_data['max_chakra'];
 
-        if($this->health > $this->max_health) {
+        if ($this->health > $this->max_health) {
             $this->health = $this->max_health;
         }
-        if($this->chakra > $this->max_chakra) {
+        if ($this->chakra > $this->max_chakra) {
             $this->chakra = $this->max_chakra;
         }
-        if($this->stamina > $this->max_stamina) {
+        if ($this->stamina > $this->max_stamina) {
             $this->stamina = $this->max_stamina;
         }
 
@@ -375,7 +379,7 @@ class User extends Fighter {
         $this->challenge = $user_data['challenge'];
 
         $this->mission_id = $user_data['mission_id'];
-        if($this->mission_id) {
+        if ($this->mission_id) {
             $this->mission_stage = json_decode($user_data['mission_stage'], true);
         }
 
@@ -394,7 +398,7 @@ class User extends Fighter {
         $this->bloodline_id = $user_data['bloodline_id'];
         $this->bloodline_name = $user_data['bloodline_name'];
 
-        if($this->bloodline_id) {
+        if ($this->bloodline_id) {
             array_unshift($this->stats, 'bloodline_skill');
         }
 
@@ -418,12 +422,12 @@ class User extends Fighter {
         $this->monthly_pvp = $user_data['monthly_pvp'];
 
         $this->missions_completed = json_decode($user_data['missions_completed'], true);
-        if(!is_array($this->missions_completed)) {
+        if (!is_array($this->missions_completed)) {
             $this->missions_completed = [];
         }
 
         $this->presents_claimed = json_decode($user_data['presents_claimed'], true);
-        if(!is_array($this->presents_claimed)) {
+        if (!is_array($this->presents_claimed)) {
             $this->presents_claimed = [];
         }
 
@@ -469,10 +473,10 @@ class User extends Fighter {
         $this->scout_range = 1;
         $this->stealth = 0;
 
-        if($this->rank > 3) {
+        if ($this->rank > 3) {
             $this->scout_range++;
         }
-        if($this->isHeadAdmin()) {
+        if ($this->isHeadAdmin()) {
             $this->scout_range += 2;
         }
 
@@ -481,14 +485,13 @@ class User extends Fighter {
 
         // Village
         $result = $this->system->query("SELECT `location` FROM `villages` WHERE `name`='{$this->village}' LIMIT 1");
-        if($this->system->db_last_num_rows != 0) {
+        if ($this->system->db_last_num_rows != 0) {
             $result = $this->system->db_fetch($result);
             $this->village_location = $result['location'];
-            if($this->location == $this->village_location) {
+            if ($this->location == $this->village_location) {
                 $this->in_village = true;
             }
-        }
-        else {
+        } else {
             $this->in_village = false;
         }
 
@@ -497,34 +500,33 @@ class User extends Fighter {
         $this->daily_tasks = [];
         $this->daily_tasks_reset = 0;
         $result = $this->system->query("SELECT `tasks`, `last_reset` FROM `daily_tasks` WHERE `user_id`='$this->user_id' LIMIT 1");
-        if($this->system->db_last_num_rows !== 0) {
+        if ($this->system->db_last_num_rows !== 0) {
             $dt = $this->system->db_fetch($result);
 
             $dt_arr = json_decode($dt['tasks'], true);
-            $this->daily_tasks = array_map(function($dt_data) {
+            $this->daily_tasks = array_map(function ($dt_data) {
                 return new DailyTask($dt_data);
             }, $dt_arr);
 
             $this->daily_tasks_reset = $dt['last_reset'];
-        }
-        else {
-            $this->system->query("INSERT INTO `daily_tasks` (`user_id`, `tasks`, `last_reset`)
+        } else {
+            $this->system->query(
+                "INSERT INTO `daily_tasks` (`user_id`, `tasks`, `last_reset`)
 			    VALUES ('{$this->user_id}', '" . json_encode([]) . "', '" . time() . "')"
             );
         }
 
-        if(empty($this->daily_tasks) || (time() - $this->daily_tasks_reset) > (60 * 60 * 24)) {
+        if (empty($this->daily_tasks) || (time() - $this->daily_tasks_reset) > (60 * 60 * 24)) {
             $this->daily_tasks = DailyTask::generateNewTasks($this);
 
             $this->system->query("UPDATE `daily_tasks` SET
                 `tasks`='" . json_encode($this->daily_tasks) . "',
                 `last_reset`='" . time() . "'
                 WHERE `user_id`='{$this->user_id}'");
-        }
-        else if($UPDATE == User::UPDATE_FULL && !$remote_view) {
+        } else if ($UPDATE == User::UPDATE_FULL && !$remote_view) {
             // check if the user has completed stuff and reward them if so
-            foreach($this->daily_tasks as $task) {
-                if(!$task->complete && $task->progress >= $task->amount) {
+            foreach ($this->daily_tasks as $task) {
+                if (!$task->complete && $task->progress >= $task->amount) {
                     $task->progress = $task->amount;
                     $task->complete = true;
                     $this->money += $task->reward;
@@ -536,12 +538,11 @@ class User extends Fighter {
 
         // Clan
         $this->clan = $user_data['clan_id'];
-        if($this->clan) {
+        if ($this->clan) {
             $result = $this->system->query("SELECT * FROM `clans` WHERE `clan_id`='$this->clan' LIMIT 1");
-            if($this->system->db_last_num_rows == 0) {
+            if ($this->system->db_last_num_rows == 0) {
                 $this->clan = false;
-            }
-            else {
+            } else {
                 $clan_data = $this->system->db_fetch($result);
                 $this->clan = [
                     'id' => $clan_data['clan_id'],
@@ -573,15 +574,15 @@ class User extends Fighter {
         ];
 
         $team_id = $user_data['team_id'];
-        if($team_id) {
+        if ($team_id) {
             // Invite stuff
-            if(substr($team_id, 0, 7) == 'invite:') {
+            if (substr($team_id, 0, 7) == 'invite:') {
                 $this->team_invite = (int)explode(':', $team_id)[1];
             }
             // Player team stuff
             else {
                 $this->team = Team::findById($this->system, $team_id);
-                if($this->team != null) {
+                if ($this->team != null) {
                     $this->defense_boost += $this->team->getDefenseBoost($this);
                 }
             }
@@ -591,25 +592,24 @@ class User extends Fighter {
         $this->spouse = $user_data['spouse'];
         $this->marriage_time = $user_data['marriage_time'];
         $result = $this->system->query("SELECT `user_name` FROM `users` WHERE `user_id`='$this->spouse' LIMIT 1");
-        if($this->system->db_last_num_rows) {
+        if ($this->system->db_last_num_rows) {
             $this->spouse_name = $this->system->db_fetch($result)['user_name'];
-        }
-        else {
+        } else {
             //TODO: Make a log if this becomes an issue
             $this->spouse_name = '???';
         }
 
         // Bloodline
-        if($this->bloodline_id) {
+        if ($this->bloodline_id) {
             $this->bloodline = new Bloodline($this->bloodline_id, $this->user_id);
 
             // Debug info
-            if($this->system->debug['bloodline']) {
+            if ($this->system->debug['bloodline']) {
                 echo "Debugging {$this->getName()}<br />";
-                foreach($this->bloodline->passive_boosts as $id => $boost) {
+                foreach ($this->bloodline->passive_boosts as $id => $boost) {
                     echo "Boost: " . $boost['effect'] . " : " . $boost['power'] . "<br />";
                 }
-                foreach($this->bloodline->combat_boosts as $id => $boost) {
+                foreach ($this->bloodline->combat_boosts as $id => $boost) {
                     echo "Boost: " . $boost['effect'] . " : " . $boost['power'] . "<br />";
                 }
                 echo "<br />";
@@ -617,27 +617,32 @@ class User extends Fighter {
 
             $this->bloodline->setBoostAmounts(
                 $this->rank,
-                $this->ninjutsu_skill, $this->taijutsu_skill, $this->genjutsu_skill, $this->bloodline_skill,
-                $this->base_stats, $this->total_stats, $this->stats_max_level,
+                $this->ninjutsu_skill,
+                $this->taijutsu_skill,
+                $this->genjutsu_skill,
+                $this->bloodline_skill,
+                $this->base_stats,
+                $this->total_stats,
+                $this->stats_max_level,
                 $this->regen_rate
             );
 
             // Debug info
-            if($this->system->debug['bloodline']) {
+            if ($this->system->debug['bloodline']) {
                 echo "Debugging {$this->getName()}<br />";
-                foreach($this->bloodline->passive_boosts as $id => $boost) {
+                foreach ($this->bloodline->passive_boosts as $id => $boost) {
                     echo "Boost: " . $boost['effect'] . " : " . $boost['power'] . "<br />";
                 }
-                foreach($this->bloodline->combat_boosts as $id => $boost) {
+                foreach ($this->bloodline->combat_boosts as $id => $boost) {
                     echo "Boost: " . $boost['effect'] . " : " . $boost['power'] . "<br />";
                 }
                 echo "<br />";
             }
 
             // Apply out-of-combat effects
-            if(!empty($this->bloodline->passive_boosts)) {
-                foreach($this->bloodline->passive_boosts as $id => $effect) {
-                    switch($effect['effect']) {
+            if (!empty($this->bloodline->passive_boosts)) {
+                foreach ($this->bloodline->passive_boosts as $id => $effect) {
+                    switch ($effect['effect']) {
                         case 'scout_range':
                             $this->scout_range += $effect['effect_amount'];
                             break;
@@ -655,22 +660,22 @@ class User extends Fighter {
         }
 
         // Chat color
-        if($this->chat_color == '') {
+        if ($this->chat_color == '') {
             $this->chat_color = 'black';
         }
 
         // Forbidden seal
-        if($this->forbidden_seal) {
+        if ($this->forbidden_seal) {
             $this->forbidden_seal = json_decode($user_data['forbidden_seal'], true);
 
-            if($this->forbidden_seal['time'] < time() && $UPDATE >= User::UPDATE_FULL && !(!$this->forbidden_seal['level'] && $this->forbidden_seal['color'])) {
+            if ($this->forbidden_seal['time'] < time() && $UPDATE >= User::UPDATE_FULL && !(!$this->forbidden_seal['level'] && $this->forbidden_seal['color'])) {
                 $this->system->message("Your Forbidden Seal has receded.");
                 $this->forbidden_seal = false;
             }
 
             // Patch infinite premium from user name color
-            if(isset($this->forbidden_seal['color']) && $UPDATE >= User::UPDATE_FULL) {
-                if(!isset($this->forbidden_seal['level'])) {
+            if (isset($this->forbidden_seal['color']) && $UPDATE >= User::UPDATE_FULL) {
+                if (!isset($this->forbidden_seal['level'])) {
                     $this->chat_color = $this->forbidden_seal['color'];
                     $this->forbidden_seal = false;
                 } else {
@@ -681,30 +686,27 @@ class User extends Fighter {
 
             // Regen boost
             else {
-                if($this->forbidden_seal['level'] == 1) {
+                if ($this->forbidden_seal['level'] == 1) {
                     $this->regen_boost += $this->regen_rate * 0.1;
-                }
-                else if($this->forbidden_seal['level'] == 2) {
+                } else if ($this->forbidden_seal['level'] == 2) {
                     $this->regen_boost += $this->regen_rate * 0.2;
                 }
-
             }
         }
 
         //In Village Regen
-        if($this->in_village) {
+        if ($this->in_village) {
             $this->regen_boost += 20 + $this->regen_rate;
         }
 
         // Elements
         $elements = $user_data['elements'];
-        if($elements) {
+        if ($elements) {
             $this->elements = json_decode(
                 $user_data['elements'] ?? "[]",
                 true
             );
-        }
-        else {
+        } else {
             $this->elements = [];
         }
 
@@ -715,13 +717,13 @@ class User extends Fighter {
 
         // Regen/time-based events
         $time_difference = time() - $this->last_update;
-        if($time_difference > 60 && $UPDATE >= User::UPDATE_REGEN) {
+        if ($time_difference > 60 && $UPDATE >= User::UPDATE_REGEN) {
             $minutes = floor($time_difference / 60);
 
             $regen_amount = $minutes * ($this->regen_rate + $this->regen_boost);
 
             // In-battle decrease
-            if($this->battle_id) {
+            if ($this->battle_id) {
                 $regen_amount -= round($regen_amount * 0.7, 1);
             }
 
@@ -729,13 +731,13 @@ class User extends Fighter {
             $this->chakra += $regen_amount;
             $this->stamina += $regen_amount;
 
-            if($this->health > $this->max_health) {
+            if ($this->health > $this->max_health) {
                 $this->health = $this->max_health;
             }
-            if($this->chakra > $this->max_chakra) {
+            if ($this->chakra > $this->max_chakra) {
                 $this->chakra = $this->max_chakra;
             }
-            if($this->stamina > $this->max_stamina) {
+            if ($this->stamina > $this->max_stamina) {
                 $this->stamina = $this->max_stamina;
             }
 
@@ -744,36 +746,35 @@ class User extends Fighter {
 
         // Check training
         $display = '';
-        if($this->train_time && $UPDATE >= User::UPDATE_FULL) {
-            if($this->train_time < time()) {
+        if ($this->train_time && $UPDATE >= User::UPDATE_FULL) {
+            if ($this->train_time < time()) {
                 // Jutsu training
-                if(strpos($this->train_type, 'jutsu:') !== false) {
+                if (strpos($this->train_type, 'jutsu:') !== false) {
                     $jutsu_id = $this->train_gain;
                     $this->getInventory();
 
                     $gain = User::$jutsu_train_gain;
-                    if($this->system->TRAIN_BOOST) {
+                    if ($this->system->TRAIN_BOOST) {
                         $gain += $this->system->TRAIN_BOOST;
                     }
-                    if($this->jutsu[$jutsu_id]->level + $gain > 100) {
+                    if ($this->jutsu[$jutsu_id]->level + $gain > 100) {
                         $gain = 100 - $this->jutsu[$jutsu_id]->level;
                     }
 
-                    if($this->checkInventory($jutsu_id, 'jutsu')) {
-                        if($this->jutsu[$jutsu_id]->level < 100) {
+                    if ($this->checkInventory($jutsu_id, 'jutsu')) {
+                        if ($this->jutsu[$jutsu_id]->level < 100) {
                             $new_level = $this->jutsu[$jutsu_id]->level + $gain;
 
-                            if($new_level > 100) {
+                            if ($new_level > 100) {
                                 $this->jutsu[$jutsu_id]->level = 100;
-                            }
-                            else {
+                            } else {
                                 $this->jutsu[$jutsu_id]->level += $gain;
                             }
                             $message = $this->jutsu[$jutsu_id]->name . " has increased to level " .
                                 $this->jutsu[$jutsu_id]->level . '.';
 
                             $jutsu_skill_type = $this->jutsu[$jutsu_id]->jutsu_type . '_skill';
-                            if($this->total_stats < $this->stat_cap) {
+                            if ($this->total_stats < $this->stat_cap) {
                                 $this->{$jutsu_skill_type}++;
                                 $this->exp += 10;
                                 $message .= ' You have gained 1 ' . ucwords(str_replace('_', ' ', $jutsu_skill_type)) .
@@ -782,7 +783,7 @@ class User extends Fighter {
 
                             $this->system->message($message);
 
-                            if(!$this->ban_type) {
+                            if (!$this->ban_type) {
                                 $this->updateInventory();
                             }
                         }
@@ -793,9 +794,9 @@ class User extends Fighter {
                 // Skill/attribute training
                 else {
                     // TEAM BOOST TRAINING GAINS
-                    if($this->team != null) {
+                    if ($this->team != null) {
                         $boost_percent = $this->team->checkForTrainingBoostTrigger();
-                        if($boost_percent != null) {
+                        if ($boost_percent != null) {
                             $boost_amount = round($this->train_gain * $boost_percent, 0, PHP_ROUND_HALF_DOWN);
                             $this->train_gain += $boost_amount;
 
@@ -810,9 +811,9 @@ class User extends Fighter {
 
                     $total_stats = $this->total_stats + $gain;
 
-                    if($total_stats > $this->stat_cap) {
+                    if ($total_stats > $this->stat_cap) {
                         $gain -= $total_stats - $this->stat_cap;
-                        if($gain < 0) {
+                        if ($gain < 0) {
                             $gain = 0;
                         }
                     }
@@ -821,14 +822,14 @@ class User extends Fighter {
                     $this->exp += $gain * 10;
 
                     $this->train_time = 0;
-                    $this->system->message("You have gained " . $gain . " " . ucwords(str_replace('_', ' ', $this->train_type)) .
-                        " and " . ($gain * 10) . " experience." . $team_boost
+                    $this->system->message(
+                        "You have gained " . $gain . " " . ucwords(str_replace('_', ' ', $this->train_type)) .
+                            " and " . ($gain * 10) . " experience." . $team_boost
                     );
                 }
-            }
-            else {
+            } else {
                 //*setTimeout is used to notify training finished*//
-                if(strpos($this->train_type, 'jutsu:') !== false) {
+                if (strpos($this->train_type, 'jutsu:') !== false) {
                     $train_type = str_replace('jutsu:', '', $this->train_type);
                     $display .= "<p class='trainingNotification'>Training: " . ucwords(str_replace('_', ' ', $train_type)) . "<br />" .
                         "<span id='trainingTimer'>" . System::timeRemaining($this->train_time - time(), 'short', false, true) . " remaining</span></p>";
@@ -836,8 +837,7 @@ class User extends Fighter {
 					let train_time = " . ($this->train_time - time()) . ";
           setTimeout(()=>{titleBarFlash();}, train_time * 1000);
 					</script>";
-                }
-                else {
+                } else {
                     //*setTimeout is used to notify training finished*//
                     $display .= "<p class='trainingNotification'>Training: " . ucwords(str_replace('_', ' ', $this->train_type)) . "<br />" .
                         "<span id='trainingTimer'>" . System::timeRemaining($this->train_time - time(), 'short', false, true) . " remaining</span></p>";
@@ -851,7 +851,8 @@ class User extends Fighter {
 
         // Correction location
         $villages = $this->system->getVillageLocations();
-        if(isset($villages[$this->location]) &&
+        if (
+            isset($villages[$this->location]) &&
             $this->location !== $this->village_location &&
             !$this->isHeadAdmin()
         ) {
@@ -861,7 +862,8 @@ class User extends Fighter {
         return $display;
     }
 
-    public function getInventory() {
+    public function getInventory()
+    {
         // Query user owned inventory
         $result = $this->system->query("SELECT * FROM `user_inventory` WHERE `user_id` = '{$this->user_id}'");
 
@@ -871,15 +873,15 @@ class User extends Fighter {
         $equipped_items = [];
 
         // Decode JSON of inventory into variables
-        if($this->system->db_last_num_rows > 0) {
+        if ($this->system->db_last_num_rows > 0) {
             $user_inventory = $this->system->db_fetch($result);
             $player_jutsu = json_decode($user_inventory['jutsu'], true);
             $player_items = json_decode($user_inventory['items']);
             $equipped_jutsu = json_decode($user_inventory['equipped_jutsu']);
             $equipped_items = json_decode($user_inventory['equipped_items']);
-        }
-        else {
-            $this->system->query("INSERT INTO `user_inventory` (`user_id`, `items`, `bloodline_jutsu`, `jutsu`)
+        } else {
+            $this->system->query(
+                "INSERT INTO `user_inventory` (`user_id`, `items`, `bloodline_jutsu`, `jutsu`)
                 VALUES ('{$this->user_id}', '', '', '')"
             );
         }
@@ -887,11 +889,11 @@ class User extends Fighter {
         // Assemble query strings and fetch data of jutsu/items user owns from jutsu/item tables
         $player_jutsu_string = '';
 
-        if($player_jutsu) {
+        if ($player_jutsu) {
             $player_jutsu_array = $player_jutsu;
             $player_jutsu = [];
-            foreach($player_jutsu_array as $jutsu_data) {
-                if(!is_numeric($jutsu_data['jutsu_id'])) {
+            foreach ($player_jutsu_array as $jutsu_data) {
+                if (!is_numeric($jutsu_data['jutsu_id'])) {
                     continue;
                 }
                 $player_jutsu[$jutsu_data['jutsu_id']] = $jutsu_data;
@@ -905,12 +907,12 @@ class User extends Fighter {
                 "SELECT * FROM `jutsu` WHERE `jutsu_id` IN ({$player_jutsu_string})
 				AND `purchase_type` != '1' AND `rank` <= '{$this->rank}'"
             );
-            if($this->system->db_last_num_rows > 0) {
-                while($jutsu_data = $this->system->db_fetch($result)) {
+            if ($this->system->db_last_num_rows > 0) {
+                while ($jutsu_data = $this->system->db_fetch($result)) {
                     $jutsu_id = $jutsu_data['jutsu_id'];
                     $jutsu = Jutsu::fromArray($jutsu_id, $jutsu_data);
 
-                    if($player_jutsu[$jutsu_id]['level'] == 0) {
+                    if ($player_jutsu[$jutsu_id]['level'] == 0) {
                         $this->jutsu_scrolls[$jutsu_id] = $jutsu;
                         continue;
                     }
@@ -918,7 +920,7 @@ class User extends Fighter {
                     $this->jutsu[$jutsu_id] = $jutsu;
                     $this->jutsu[$jutsu_id]->setLevel($player_jutsu[$jutsu_id]['level'], $player_jutsu[$jutsu_id]['exp']);
 
-                    switch($jutsu_data['jutsu_type']) {
+                    switch ($jutsu_data['jutsu_type']) {
                         case 'ninjutsu':
                             $this->ninjutsu_ids[$jutsu_id] = $jutsu_id;
                             break;
@@ -931,33 +933,31 @@ class User extends Fighter {
                     }
                 }
             }
-        }
-        else {
+        } else {
             $this->jutsu = [];
         }
 
         $this->equipped_jutsu = [];
-        if(!empty($equipped_jutsu)) {
+        if (!empty($equipped_jutsu)) {
             $count = 0;
-            foreach($equipped_jutsu as $jutsu_data) {
-                if($this->checkInventory($jutsu_data->id, 'jutsu')) {
+            foreach ($equipped_jutsu as $jutsu_data) {
+                if ($this->checkInventory($jutsu_data->id, 'jutsu')) {
                     $this->equipped_jutsu[$count]['id'] = $jutsu_data->id;
                     $this->equipped_jutsu[$count]['type'] = $jutsu_data->type;
                     $count++;
                 }
             }
-        }
-        else {
+        } else {
             $this->equipped_jutsu = [];
         }
 
-        if($player_items) {
+        if ($player_items) {
             $player_items_array = $player_items;
             $player_items = [];
             $player_items_string = '';
 
-            foreach($player_items_array as $item) {
-                if(!is_numeric($item->item_id)) {
+            foreach ($player_items_array as $item) {
+                if (!is_numeric($item->item_id)) {
                     continue;
                 }
                 $player_items[$item->item_id] = $item;
@@ -968,32 +968,28 @@ class User extends Fighter {
             $this->items = [];
 
             $result = $this->system->query("SELECT * FROM `items` WHERE `item_id` IN ({$player_items_string})");
-            if($this->system->db_last_num_rows > 0) {
-                while($item = $this->system->db_fetch($result)) {
+            if ($this->system->db_last_num_rows > 0) {
+                while ($item = $this->system->db_fetch($result)) {
                     $this->items[$item['item_id']] = $item;
                     $this->items[$item['item_id']]['quantity'] = $player_items[$item['item_id']]->quantity;
                 }
-
-            }
-            else {
+            } else {
                 $this->items = [];
             }
-        }
-        else {
+        } else {
             $this->items = [];
         }
 
         $this->equipped_items = [];
         $this->equipped_weapons = [];
         $this->equipped_armor = [];
-        if($equipped_items) {
-            foreach($equipped_items as $item_id) {
-                if($this->checkInventory($item_id, 'item')) {
+        if ($equipped_items) {
+            foreach ($equipped_items as $item_id) {
+                if ($this->checkInventory($item_id, 'item')) {
                     $this->equipped_items[] = $item_id;
-                    if($this->items[$item_id]['use_type'] == 1) {
+                    if ($this->items[$item_id]['use_type'] == 1) {
                         $this->equipped_weapons[] = $item_id;
-                    }
-                    else if($this->items[$item_id]['use_type'] == 2) {
+                    } else if ($this->items[$item_id]['use_type'] == 2) {
                         $this->equipped_armor[] = $item_id;
                     }
                 }
@@ -1009,18 +1005,18 @@ class User extends Fighter {
         @item_id: Id of the item/jutsu to be checked for
         @inventory_type (jutsu, item): Type of thing to check for, either item or jutsu
     */
-    public function checkInventory($item_id, $inventory_type = 'jutsu'): bool {
-        if(!$item_id) {
+    public function checkInventory($item_id, $inventory_type = 'jutsu'): bool
+    {
+        if (!$item_id) {
             return false;
         }
 
-        if($inventory_type == 'jutsu') {
-            if(isset($this->jutsu[$item_id])) {
+        if ($inventory_type == 'jutsu') {
+            if (isset($this->jutsu[$item_id])) {
                 return true;
             }
-        }
-        else if($inventory_type == 'item') {
-            if(isset($this->items[$item_id])) {
+        } else if ($inventory_type == 'item') {
+            if (isset($this->items[$item_id])) {
                 return true;
             }
         }
@@ -1028,18 +1024,21 @@ class User extends Fighter {
         return false;
     }
 
-    public function hasJutsu(int $jutsu_id): bool {
+    public function hasJutsu(int $jutsu_id): bool
+    {
         return isset($this->jutsu[$jutsu_id]);
     }
 
-    public function hasItem(int $item_id): bool {
+    public function hasItem(int $item_id): bool
+    {
         return isset($this->items[$item_id]);
     }
 
     /* function useJutsu
         pool check, calc exp, etc */
-    public function useJutsu(Jutsu $jutsu): bool {
-        switch($jutsu->jutsu_type) {
+    public function useJutsu(Jutsu $jutsu): bool
+    {
+        switch ($jutsu->jutsu_type) {
             case 'ninjutsu':
             case 'genjutsu':
                 $energy_type = 'chakra';
@@ -1051,31 +1050,30 @@ class User extends Fighter {
                 return false;
         }
 
-        if($this->{$energy_type} < $jutsu->use_cost) {
+        if ($this->{$energy_type} < $jutsu->use_cost) {
             $this->system->message("You do not have enough $energy_type!");
             return false;
         }
 
-        switch($jutsu->purchase_type) {
+        switch ($jutsu->purchase_type) {
             case Jutsu::PURCHASE_TYPE_PURCHASEABLE:
                 // Element check
-                if($jutsu->element && $jutsu->element != Jutsu::ELEMENT_NONE) {
-                    if($this->elements) {
-                        if(array_search($jutsu->element, $this->elements) === false) {
+                if ($jutsu->element && $jutsu->element != Jutsu::ELEMENT_NONE) {
+                    if ($this->elements) {
+                        if (array_search($jutsu->element, $this->elements) === false) {
                             $this->system->message("You do not possess the elemental chakra for this jutsu!");
                             return false;
                         }
-                    }
-                    else {
+                    } else {
                         $this->system->message("You do not possess the elemental chakra for this jutsu!");
                         return false;
                     }
                 }
 
-                if($this->jutsu[$jutsu->id]->level < 100) {
+                if ($this->jutsu[$jutsu->id]->level < 100) {
                     $this->jutsu[$jutsu->id]->exp += round(1000 / ($this->jutsu[$jutsu->id]->level * 0.9));
 
-                    if($this->jutsu[$jutsu->id]->exp >= 1000) {
+                    if ($this->jutsu[$jutsu->id]->exp >= 1000) {
                         $this->jutsu[$jutsu->id]->exp = 0;
                         $this->jutsu[$jutsu->id]->level++;
                         $this->system->message($jutsu->name . " has increased to level " . $this->jutsu[$jutsu->id]->level . ".");
@@ -1085,10 +1083,10 @@ class User extends Fighter {
                 $this->{$energy_type} -= $jutsu->use_cost;
                 break;
             case Jutsu::PURCHASE_TYPE_BLOODLINE:
-                if($this->bloodline->jutsu[$jutsu->id]->level < 100) {
+                if ($this->bloodline->jutsu[$jutsu->id]->level < 100) {
                     $this->bloodline->jutsu[$jutsu->id]->exp += round(500 / ($this->bloodline->jutsu[$jutsu->id]->level * 0.9));
 
-                    if($this->bloodline->jutsu[$jutsu->id]->exp >= 1000) {
+                    if ($this->bloodline->jutsu[$jutsu->id]->exp >= 1000) {
                         $this->bloodline->jutsu[$jutsu->id]->exp = 0;
                         $this->bloodline->jutsu[$jutsu->id]->level++;
                         $this->system->message($jutsu->name . " has increased to level " . $this->bloodline->jutsu[$jutsu->id]->level . ".");
@@ -1111,7 +1109,8 @@ class User extends Fighter {
 
     /* function moteToVillage()
         moves user to village */
-    public function moveToVillage() {
+    public function moveToVillage()
+    {
         $this->location = $this->village_location;
         $location = explode('.', $this->location);
         $this->x = $location[0];
@@ -1122,7 +1121,8 @@ class User extends Fighter {
         Updates user data from class members into database
         -Parameters-
     */
-    public function updateData() {
+    public function updateData()
+    {
         $this->location = $this->x . '.' . $this->y;
 
         $query = "UPDATE `users` SET
@@ -1152,35 +1152,31 @@ class User extends Fighter {
 		`exp` = '$this->exp',
 		`bloodline_id` = '$this->bloodline_id',
 		`bloodline_name` = '$this->bloodline_name',";
-        if($this->clan) {
+        if ($this->clan) {
             $query .= "`clan_id` = '{$this->clan['id']}',
 			`clan_office`='{$this->clan_office}',";
         }
 
-        if($this->team) {
+        if ($this->team) {
             $query .= "`team_id` = '{$this->team->id}',";
-        }
-        else if($this->team_invite) {
+        } else if ($this->team_invite) {
             $query .= "`team_id` = 'invite:{$this->team_invite}',";
-        }
-        else {
+        } else {
             $query .= "`team_id`=0,";
         }
 
         $query .= "`battle_id` = '$this->battle_id',
 		`challenge` = '$this->challenge',
 		`location` = '$this->location',";
-        if($this->mission_id) {
-            if(is_array($this->mission_stage)) {
+        if ($this->mission_id) {
+            if (is_array($this->mission_stage)) {
                 $mission_stage = json_encode($this->mission_stage);
-            }
-            else {
+            } else {
                 $mission_stage = $this->mission_stage;
             }
             $query .= "`mission_id`='$this->mission_id',
 			`mission_stage`='$mission_stage',";
-        }
-        else {
+        } else {
             $query .= "`mission_id`=0,";
         }
 
@@ -1197,22 +1193,22 @@ class User extends Fighter {
 		`last_death` = '$this->last_death',";
 
         $forbidden_seal = $this->forbidden_seal;
-        if(is_array($forbidden_seal)) {
+        if (is_array($forbidden_seal)) {
             $forbidden_seal = json_encode($forbidden_seal);
         }
 
         $elements = $this->elements;
-        if(is_array($elements)) {
+        if (is_array($elements)) {
             $elements = json_encode($this->elements);
         }
 
         $missions_completed = $this->missions_completed;
-        if(is_array($missions_completed)) {
+        if (is_array($missions_completed)) {
             $missions_completed = json_encode($missions_completed);
         }
 
         $presents_claimed = $this->presents_claimed;
-        if(is_array($presents_claimed)) {
+        if (is_array($presents_claimed)) {
             $presents_claimed = json_encode($this->presents_claimed);
         }
 
@@ -1245,13 +1241,13 @@ class User extends Fighter {
         $this->system->query($query);
 
         // Update Blacklist
-        if(count($this->blacklist) != count($this->original_blacklist)) {
+        if (count($this->blacklist) != count($this->original_blacklist)) {
             $blacklist_json = json_encode($this->blacklist);
             $this->system->query("UPDATE `blacklist` SET `blocked_ids`='{$blacklist_json}' WHERE `user_id`='{$this->user_id}' LIMIT 1");
         }
 
         //Update Daily Tasks
-        if($this->daily_tasks) {
+        if ($this->daily_tasks) {
             $dt = json_encode($this->daily_tasks);
             $this->system->query("UPDATE `daily_tasks` SET `tasks`='{$dt}' WHERE `user_id`='{$this->user_id}'");
         }
@@ -1261,8 +1257,9 @@ class User extends Fighter {
         Updates user inventory from class members into database
         -Parameters-
     */
-    public function updateInventory(): bool {
-        if(!$this->inventory_loaded) {
+    public function updateInventory(): bool
+    {
+        if (!$this->inventory_loaded) {
             $this->system->error("Called update without fetching inventory!");
             return false;
         }
@@ -1273,8 +1270,8 @@ class User extends Fighter {
         $jutsu_count = 0;
         $item_count = 0;
 
-        if(!empty($this->jutsu)) {
-            foreach($this->jutsu as $jutsu) {
+        if (!empty($this->jutsu)) {
+            foreach ($this->jutsu as $jutsu) {
                 $player_jutsu[$jutsu_count] = [
                     'jutsu_id' => $jutsu->id,
                     'level' => $jutsu->level,
@@ -1284,8 +1281,8 @@ class User extends Fighter {
             }
         }
 
-        if($this->jutsu_scrolls && !empty($this->jutsu_scrolls)) {
-            foreach($this->jutsu_scrolls as $jutsu_scroll) {
+        if ($this->jutsu_scrolls && !empty($this->jutsu_scrolls)) {
+            foreach ($this->jutsu_scrolls as $jutsu_scroll) {
                 $player_jutsu[$jutsu_count] = [
                     'jutsu_id' => $jutsu_scroll->id,
                     'level' => $jutsu_scroll->level,
@@ -1295,8 +1292,8 @@ class User extends Fighter {
             }
         }
 
-        if($this->items && !empty($this->items)) {
-            foreach($this->items as $item) {
+        if ($this->items && !empty($this->items)) {
+            foreach ($this->items as $item) {
                 $player_items[$item_count] = [
                     'item_id' => $item['item_id'],
                     'quantity' => $item['quantity'],
@@ -1310,7 +1307,8 @@ class User extends Fighter {
         $player_equipped_jutsu_json = json_encode($this->equipped_jutsu);
         $player_equipped_items_json = json_encode($this->equipped_items);
 
-        $this->system->query("UPDATE `user_inventory` SET
+        $this->system->query(
+            "UPDATE `user_inventory` SET
 			`jutsu` = '{$player_jutsu_json}',
 			`items` = '{$player_items_json}',
 			`equipped_jutsu` = '{$player_equipped_jutsu_json}',
@@ -1319,10 +1317,10 @@ class User extends Fighter {
         );
 
         $bloodline_jutsu = [];
-        if($this->bloodline_id && !empty($this->bloodline->jutsu)) {
+        if ($this->bloodline_id && !empty($this->bloodline->jutsu)) {
             $jutsu_count = 0;
-            foreach($this->bloodline->jutsu as $jutsu) {
-                if($jutsu->rank > $this->rank) {
+            foreach ($this->bloodline->jutsu as $jutsu) {
+                if ($jutsu->rank > $this->rank) {
                     continue;
                 }
                 $bloodline_jutsu[$jutsu_count]['jutsu_id'] = $jutsu->id;
@@ -1333,7 +1331,8 @@ class User extends Fighter {
 
             $bloodline_jutsu_json = json_encode($bloodline_jutsu);
 
-            $this->system->query("UPDATE `user_bloodlines` SET `jutsu` = '{$bloodline_jutsu_json}'
+            $this->system->query(
+                "UPDATE `user_bloodlines` SET `jutsu` = '{$bloodline_jutsu_json}'
 				WHERE `user_id` = '{$this->user_id}' LIMIT 1"
             );
         }
@@ -1341,27 +1340,30 @@ class User extends Fighter {
         return true;
     }
 
-    public function getName(): string {
+    public function getName(): string
+    {
         return $this->user_name;
     }
 
-    public function getAvatarSize(): int {
+    public function getAvatarSize(): int
+    {
         return $this->forbidden_seal ? self::AVATAR_MAX_SEAL_SIZE : self::AVATAR_MAX_SIZE;
     }
 
-    public function canChangeChatColor(): bool {
+    public function canChangeChatColor(): bool
+    {
         // Premium purchased
-        if($this->premium_credits_purchased) {
+        if ($this->premium_credits_purchased) {
             return true;
         }
 
         // Forbidden seal
-        if($this->forbidden_seal && $this->forbidden_seal['time'] > time()) {
+        if ($this->forbidden_seal && $this->forbidden_seal['time'] > time()) {
             return true;
         }
 
         // Staff level
-        if($this->isModerator() || $this->isHeadModerator() || $this->isContentAdmin() || $this->isUserAdmin() || $this->isHeadAdmin()) {
+        if ($this->isModerator() || $this->isHeadModerator() || $this->isContentAdmin() || $this->isUserAdmin() || $this->isHeadAdmin()) {
             return true;
         }
 
@@ -1377,41 +1379,42 @@ class User extends Fighter {
             'black' => 'normalUser'
         ];
 
-        if($this->forbidden_seal || $this->isHeadAdmin()) {
+        if ($this->forbidden_seal || $this->isHeadAdmin()) {
             $return = array_merge($return, [
                 'blue' => 'blue',
                 'pink' => 'pink',
             ]);
         }
 
-        if($this->premium_credits_purchased > 0 || $this->isHeadAdmin()) {
+        if ($this->premium_credits_purchased > 0 || $this->isHeadAdmin()) {
             $return = array_merge($return, [
                 'gold' => 'gold'
             ]);
         }
 
-        if($this->isModerator()) {
+        if ($this->isModerator()) {
             $return['green'] = 'moderator';
         }
 
-        if($this->isHeadModerator()) {
+        if ($this->isHeadModerator()) {
             $return['teal'] = 'headModerator';
         }
 
-        if($this->isContentAdmin()) {
+        if ($this->isContentAdmin()) {
             $return['purple'] = 'contentAdmin';
         }
 
-        if($this->isUserAdmin()) {
+        if ($this->isUserAdmin()) {
             $return['red'] = 'administrator';
         }
 
         return $return;
     }
 
-    public function getAvatarFileSize($format='MB'): string {
+    public function getAvatarFileSize($format = 'MB'): string
+    {
         $max_size = self::AVATAR_MAX_FILE_SIZE;
-        switch($format) {
+        switch ($format) {
             default:
                 $divisor = 1024 * 1024;
                 $suffix = "MB";
@@ -1419,33 +1422,36 @@ class User extends Fighter {
             case 'kb':
                 $divisor = 1024;
                 $suffix = "KB";
-            break;
+                break;
         }
         return floor($max_size / $divisor) . $suffix;
     }
 
-    public function expForNextLevel() {
+    public function expForNextLevel()
+    {
         return $this->exp_per_level * (($this->level + 1) - $this->base_level) + ($this->base_stats * 10);
     }
 
-    public function hasEquippedJutsu(int $jutsu_id): bool {
-        if(!isset($this->jutsu[$jutsu_id])) {
+    public function hasEquippedJutsu(int $jutsu_id): bool
+    {
+        if (!isset($this->jutsu[$jutsu_id])) {
             return false;
         }
 
-        foreach($this->equipped_jutsu as $jutsu) {
-            if($jutsu['id'] == $jutsu_id) {
+        foreach ($this->equipped_jutsu as $jutsu) {
+            if ($jutsu['id'] == $jutsu_id) {
                 return true;
             }
         }
         return false;
     }
 
-    public function removeJutsu(int $jutsu_id) {
+    public function removeJutsu(int $jutsu_id)
+    {
         $jutsu = $this->jutsu[$jutsu_id];
         unset($this->jutsu[$jutsu_id]);
 
-        switch($jutsu->jutsu_type) {
+        switch ($jutsu->jutsu_type) {
             case Jutsu::TYPE_NINJUTSU:
                 unset($this->ninjutsu_ids[$jutsu_id]);
                 break;
@@ -1458,13 +1464,15 @@ class User extends Fighter {
         }
     }
 
-    public function clearMission() {
+    public function clearMission()
+    {
         $this->mission_id = 0;
         $this->mission_stage = [];
     }
 
-    public function isSupportStaff(): bool {
-        switch($this->support_level) {
+    public function isSupportStaff(): bool
+    {
+        switch ($this->support_level) {
             case User::SUPPORT_BASIC:
             case User::SUPPORT_INTERMEDIATE:
             case User::SUPPORT_CONTENT_ONLY:
@@ -1476,8 +1484,9 @@ class User extends Fighter {
         }
     }
 
-    public function isSupportSupervisor(): bool {
-        switch($this->support_level) {
+    public function isSupportSupervisor(): bool
+    {
+        switch ($this->support_level) {
             case User::SUPPORT_SUPERVISOR:
             case User::SUPPORT_ADMIN:
                 return true;
@@ -1486,8 +1495,9 @@ class User extends Fighter {
         }
     }
 
-    public function isSupportAdmin(): bool {
-        switch($this->support_level) {
+    public function isSupportAdmin(): bool
+    {
+        switch ($this->support_level) {
             case User::SUPPORT_ADMIN:
                 return true;
             default:
@@ -1495,8 +1505,9 @@ class User extends Fighter {
         }
     }
 
-    public function isModerator(): bool {
-        switch($this->staff_level) {
+    public function isModerator(): bool
+    {
+        switch ($this->staff_level) {
             case User::STAFF_MODERATOR:
             case User::STAFF_HEAD_MODERATOR:
             case User::STAFF_ADMINISTRATOR:
@@ -1507,8 +1518,9 @@ class User extends Fighter {
         }
     }
 
-    public function isHeadModerator(): bool {
-        switch($this->staff_level) {
+    public function isHeadModerator(): bool
+    {
+        switch ($this->staff_level) {
             case User::STAFF_HEAD_MODERATOR:
             case User::STAFF_ADMINISTRATOR:
             case User::STAFF_HEAD_ADMINISTRATOR:
@@ -1518,8 +1530,9 @@ class User extends Fighter {
         }
     }
 
-    public function isContentAdmin(): bool {
-        switch($this->staff_level) {
+    public function isContentAdmin(): bool
+    {
+        switch ($this->staff_level) {
             case User::STAFF_CONTENT_ADMIN:
             case User::STAFF_ADMINISTRATOR:
             case User::STAFF_HEAD_ADMINISTRATOR:
@@ -1529,8 +1542,9 @@ class User extends Fighter {
         }
     }
 
-    public function isUserAdmin(): bool {
-        switch($this->staff_level) {
+    public function isUserAdmin(): bool
+    {
+        switch ($this->staff_level) {
             case User::STAFF_ADMINISTRATOR:
             case User::STAFF_HEAD_ADMINISTRATOR:
                 return true;
@@ -1539,11 +1553,13 @@ class User extends Fighter {
         }
     }
 
-    public function isHeadAdmin(): bool {
+    public function isHeadAdmin(): bool
+    {
         return $this->staff_level == User::STAFF_HEAD_ADMINISTRATOR;
     }
 
-    public function hasAdminPanel(): bool {
+    public function hasAdminPanel(): bool
+    {
         return $this->isContentAdmin() || $this->isUserAdmin() || $this->isHeadAdmin();
     }
 
@@ -1551,9 +1567,10 @@ class User extends Fighter {
     const LOG_ARENA = 'arena';
     const LOG_LOGIN = 'login';
 
-    public function log(string $log_type, string $log_contents): bool {
+    public function log(string $log_type, string $log_contents): bool
+    {
         $valid_log_types = [self::LOG_TRAINING, self::LOG_ARENA, self::LOG_LOGIN];
-        if(!in_array($log_type, $valid_log_types)) {
+        if (!in_array($log_type, $valid_log_types)) {
             error_log("Invalid player log type {$log_type}");
             return false;
         }
@@ -1561,7 +1578,8 @@ class User extends Fighter {
         $dateTime = System::dateTimeFromMicrotime(microtime(true));
 
         $dateTimeFormat = System::DB_DATETIME_MS_FORMAT;
-        $this->system->query("INSERT INTO `player_logs`
+        $this->system->query(
+            "INSERT INTO `player_logs`
             (`user_id`, `user_name`, `log_type`, `log_time`,
              `log_contents`)
             VALUES
@@ -1579,10 +1597,11 @@ class User extends Fighter {
      * @return User
      * @throws Exception
      */
-    public static function fromEntityId(string $entity_id): User {
+    public static function fromEntityId(string $entity_id): User
+    {
         $entity_id = System::parseEntityId($entity_id);
 
-        if($entity_id->entity_type != self::ENTITY_TYPE) {
+        if ($entity_id->entity_type != self::ENTITY_TYPE) {
             throw new Exception("Entity ID is not a User!");
         }
 
@@ -1653,6 +1672,7 @@ class User extends Fighter {
 
             // '', '', '', 0, 0, 0, 0,
             'forbidden_seal' => '',
+            'chat_color' => '',
             'current_ip' => $_SERVER['REMOTE_ADDR'],
             'profile_song' => '',
             'last_ai' => 0,
@@ -1664,11 +1684,11 @@ class User extends Fighter {
             'ban_type' => '',
         ];
 
-        $columns = array_map(function($key) {
+        $columns = array_map(function ($key) {
             return "`{$key}`";
         }, array_keys($initial_vars));
 
-        $values = array_map(function($val) {
+        $values = array_map(function ($val) {
             return "'{$val}'";
         }, $initial_vars);
 
